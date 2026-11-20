@@ -4,18 +4,21 @@
 #include <vector>
 #include <string>
 
-#define WINDOW_WIDTH 600
-#define WINDOW_HEIGHT 600
 #define WINDOW_NAME "Snake"
 
+#define BOARD_WIDTH 600
+#define BOARD_HEIGHT 600
+
+#define BOARD_ROWS 15
+#define BOARD_COLS 15
+
+#define CELL_HEIGHT (BOARD_HEIGHT / BOARD_ROWS)
+#define CELL_WIDTH (BOARD_WIDTH / BOARD_COLS)
+
+#define CELL_OUTLINE_PIXELS 1
+#define CELL_OUTLINE_COLOR {0, 0, 0, 50}
+
 #define FRAME_RATE 60
-
-#define BOARD_WIDTH 15
-#define BOARD_HEIGHT 15
-
-#define CELL_WIDTH WINDOW_WIDTH / BOARD_WIDTH
-#define CELL_HEIGHT WINDOW_HEIGHT / BOARD_HEIGHT
-
 #define BASE_MOVE_RATE 10
 
 using std::deque;
@@ -23,16 +26,21 @@ using std::vector;
 using std::string;
 using std::to_string;
 
-enum cell {
+enum cell_content {
     CELL_EMPTY,
     CELL_SNAKE,
     CELL_FOOD
 };
 
+struct cell_location {
+    int col;
+    int row;
+};
+
 Color cell_colors[3] = {
     RAYWHITE,
-    BLUE,
-    RED
+    {0, 255, 105, 255},
+    {255, 60, 95, 255}
 };
 
 enum state {
@@ -41,24 +49,20 @@ enum state {
     STATE_GAME_OVER
 };
 
-struct coordinates {
-    int x;
-    int y;
-};
-
 state game_state = STATE_READY;
 
 int direction = 0;
 int frame_count = 0;
+int move_count = 0;
 
-cell board[BOARD_WIDTH][BOARD_HEIGHT] = {CELL_EMPTY};
+cell_content board[BOARD_COLS][BOARD_ROWS] = {CELL_EMPTY};
 
-deque<coordinates> snake;
+deque<cell_location> snake;
 
 void reset_board()
 {
-    for (int col = 0; col < BOARD_WIDTH; col++)  {
-    for (int row = 0; row < BOARD_HEIGHT; row++) {
+    for (int col = 0; col < BOARD_COLS; col++)  {
+    for (int row = 0; row < BOARD_ROWS; row++) {
         board[col][row] = CELL_EMPTY;
     }
     }
@@ -66,78 +70,93 @@ void reset_board()
 
 void draw_board()
 {
-    for (int col = 0; col < BOARD_WIDTH; col++)  {
-    for (int row = 0; row < BOARD_HEIGHT; row++) {
-        cell current_cell = board[col][row];
+    for (int col = 0; col < BOARD_COLS; col++)  {
+    for (int row = 0; row < BOARD_ROWS; row++) {
+        cell_content current_cell = board[col][row]; 
         DrawRectangle(
             col * CELL_WIDTH,
             row * CELL_HEIGHT,
             CELL_WIDTH,
             CELL_HEIGHT,
             cell_colors[current_cell]
-        ); 
+        );
+        DrawRectangleLines(
+            col * CELL_WIDTH,
+            row * CELL_HEIGHT,
+            CELL_WIDTH,
+            CELL_HEIGHT,
+            CELL_OUTLINE_COLOR 
+        );
     }
-    }
-    string snake_size = "Score: " + to_string(snake.size());
-    DrawText(snake_size.c_str(), 10, 10, 20, BLACK);
+    } 
 }
 
-void spawn_food()
+void draw_hud()
 {
-    vector<coordinates> empty_cells;
-    for (int col = 0; col < BOARD_WIDTH; col++)  {
-    for (int row = 0; row < BOARD_HEIGHT; row++) {
-        cell current_cell = board[col][row];
+    string snake_size = "Snake Size: " + to_string(snake.size());
+    DrawText(snake_size.c_str(), 15, 10, 20, BLACK);
+    string moves = "Moves: " + to_string(move_count);
+    DrawText(moves.c_str(), 15, 35, 20, BLACK);
+}
+
+void spawn_apple()
+{
+    vector<cell_location> empty_cells;
+    for (int col = 0; col < BOARD_COLS; col++)  {
+    for (int row = 0; row < BOARD_ROWS; row++) {
+        cell_content current_cell = board[col][row];
         if (current_cell == CELL_EMPTY) {
-            coordinates coords = {col, row};
+            cell_location coords = {col, row};
             empty_cells.push_back(coords);
         }
     }
     }
     size_t random_index = GetRandomValue(0, empty_cells.size() - 1);
-    coordinates spawn = empty_cells.at(random_index);
-    board[spawn.x][spawn.y] = CELL_FOOD;
+    cell_location spawn = empty_cells.at(random_index);
+    board[spawn.col][spawn.row] = CELL_FOOD;
 }
 
 void reset_snake()
 {
     snake.clear();
-    coordinates head = {
-        BOARD_WIDTH / 2,
-        BOARD_HEIGHT / 2
+    cell_location head = {
+        BOARD_ROWS / 2,
+        BOARD_COLS / 2
     };
     snake.push_back(head);
-    board[head.x][head.y] = CELL_SNAKE;
+    board[head.col][head.row] = CELL_SNAKE;
     direction = 0;
+    frame_count = 0;
+    move_count = 0;
 }
 
 void update_snake()
 {
-    coordinates old_head = snake.front();
-    coordinates new_head = old_head;
+    cell_location old_head = snake.front();
+    cell_location new_head = old_head;
 
     switch (direction) {
         case KEY_A:
-            new_head.x -= 1;
+            new_head.col -= 1;
             break;
         case KEY_D: 
-            new_head.x += 1;
+            new_head.col += 1;
             break;
         case KEY_W:
-            new_head.y -= 1;
+            new_head.row -= 1;
             break;
         case KEY_S:
-            new_head.y += 1;
+            new_head.row += 1;
             break;
     };
 
-    bool snake_hit_wall = (new_head.x < 0) or
-                          (new_head.y < 0) or
-                          (new_head.x > BOARD_WIDTH - 1) or
-                          (new_head.y > BOARD_HEIGHT - 1);
+    bool snake_hit_wall = (new_head.col < 0) or
+                          (new_head.row < 0) or
+                          (new_head.col > BOARD_COLS - 1) or
+                          (new_head.row > BOARD_ROWS - 1);
 
-    bool snake_hit_itself = board[new_head.x][new_head.y] == CELL_SNAKE;
-    bool snake_ate_food = board[new_head.x][new_head.y] == CELL_FOOD;
+    bool snake_hit_itself = board[new_head.col][new_head.row] == CELL_SNAKE;
+    bool snake_ate_apple = board[new_head.col][new_head.row] == CELL_FOOD;
 
     if (snake_hit_wall or snake_hit_itself) {
         game_state = STATE_GAME_OVER;
@@ -145,23 +164,25 @@ void update_snake()
     }
 
     snake.push_front(new_head);  
-    board[new_head.x][new_head.y] = CELL_SNAKE;
+    board[new_head.col][new_head.row] = CELL_SNAKE;
 
-    coordinates old_tail = snake.back();
-    board[old_tail.x][old_tail.y] = CELL_EMPTY;
+    cell_location old_tail = snake.back();
+    board[old_tail.col][old_tail.row] = CELL_EMPTY;
 
-    if (snake_ate_food) {
-        spawn_food();
+    if (snake_ate_apple) {
+        spawn_apple();
     } else {
         snake.pop_back();
     }
+
+    move_count++;
 }
 
 void reset_game()
 {
     reset_board();
     reset_snake();
-    spawn_food();
+    spawn_apple();
     game_state = STATE_READY;
 }
 
@@ -212,8 +233,8 @@ void update()
 
 int main()
 {
-    InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_NAME);
-    SetWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+    InitWindow(BOARD_WIDTH, BOARD_HEIGHT, WINDOW_NAME);
+    SetWindowSize(BOARD_WIDTH, BOARD_HEIGHT);
     SetTargetFPS(FRAME_RATE);
     SetExitKey(KEY_ESCAPE);
     SetTraceLogLevel(LOG_DEBUG);
@@ -230,6 +251,7 @@ int main()
 
         ClearBackground(RAYWHITE);
         draw_board();
+        draw_hud();
 
         EndDrawing();
     } 
