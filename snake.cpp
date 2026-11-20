@@ -1,6 +1,7 @@
 #include "raylib.h"
 
 #include <deque>
+#include <vector>
 #include <string>
 
 #define WINDOW_WIDTH 600
@@ -18,6 +19,7 @@
 #define BASE_MOVE_RATE 10
 
 using std::deque;
+using std::vector;
 using std::string;
 using std::to_string;
 
@@ -82,11 +84,19 @@ void draw_board()
 
 void spawn_food()
 {
-    coordinates food = {
-        GetRandomValue(0, BOARD_WIDTH - 1),
-        GetRandomValue(0, BOARD_HEIGHT - 1)
-    };
-    board[food.x][food.y] = CELL_FOOD;
+    vector<coordinates> empty_cells;
+    for (int col = 0; col < BOARD_WIDTH; col++)  {
+    for (int row = 0; row < BOARD_HEIGHT; row++) {
+        cell current_cell = board[col][row];
+        if (current_cell == CELL_EMPTY) {
+            coordinates coords = {col, row};
+            empty_cells.push_back(coords);
+        }
+    }
+    }
+    size_t random_index = GetRandomValue(0, empty_cells.size() - 1);
+    coordinates spawn = empty_cells.at(random_index);
+    board[spawn.x][spawn.y] = CELL_FOOD;
 }
 
 void reset_snake()
@@ -96,7 +106,6 @@ void reset_snake()
         BOARD_WIDTH / 2,
         BOARD_HEIGHT / 2
     };
-
     snake.push_back(head);
     board[head.x][head.y] = CELL_SNAKE;
     direction = 0;
@@ -150,8 +159,8 @@ void update_snake()
 
 void reset_game()
 {
-    reset_snake();
     reset_board();
+    reset_snake();
     spawn_food();
     game_state = STATE_READY;
 }
