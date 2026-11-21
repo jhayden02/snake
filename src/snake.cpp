@@ -12,8 +12,8 @@
 #define BOARD_WIDTH 600
 #define BOARD_HEIGHT 600
 
-#define BOARD_ROWS 30
-#define BOARD_COLS 30
+#define BOARD_ROWS 5
+#define BOARD_COLS 5
 
 #define WINDOW_WIDTH 900
 #define WINDOW_HEIGHT 600
@@ -29,7 +29,7 @@
 #define APPLE_COLOR {255, 60, 95, 255}
 
 #define FRAME_RATE 60
-#define BASE_MOVE_RATE 5
+#define BASE_MOVE_RATE 20
 
 using std::deque;
 using std::vector;
@@ -64,11 +64,12 @@ bool locations_intersect(cell_location a, cell_location b)
 
 bool location_intersects_snake(cell_location loc)
 {
-    bool intersects { false };
     for (int i{}; i < snake.size(); ++i) {
-        intersects = locations_intersect(loc, snake[i]);
+        if (locations_intersect(loc, snake[i])) {
+            return true;
+        }
     }
-    return intersects;
+    return false;
 }
 
 bool snake_head_intersects_body()
@@ -192,18 +193,22 @@ void draw_right_hud()
 
 void spawn_apple()
 {
+    //TraceLog(LOG_DEBUG, (string){ "Apple #" + to_string(snake.size()) }.c_str());
     // Empty cells.
     vector<cell_location> empty_cells;
     for (int col{}; col < BOARD_COLS; col++) {
     for (int row{}; row < BOARD_ROWS; row++) {
         cell_location cell { col, row };
-        if (not location_intersects_snake(cell)) {
+        if (location_intersects_snake(cell)) {
+            //TraceLog(LOG_DEBUG, (string){ "Snake: { " + to_string(cell.col) + ", " + to_string(cell.row) + "}" }.c_str());
+        } else {
             empty_cells.push_back(cell); 
         }
     }
     }
     int random_index { GetRandomValue(0, empty_cells.size() - 1) };
     apple = empty_cells[random_index];
+    //TraceLog(LOG_DEBUG, (string){ "Apple: { " + to_string(apple.col) + ", " + to_string(apple.row) + "}" }.c_str());
 }
 
 void update_snake()
