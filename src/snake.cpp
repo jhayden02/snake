@@ -1,4 +1,7 @@
-#include "raylib.h"
+#include "../raylib.h"
+
+#define RAYGUI_IMPLEMENTATION
+#include "../raygui.h"
 
 #include <deque>
 #include <vector>
@@ -9,8 +12,11 @@
 #define BOARD_WIDTH 600
 #define BOARD_HEIGHT 600
 
-#define BOARD_ROWS 15
-#define BOARD_COLS 15
+#define BOARD_ROWS 5
+#define BOARD_COLS 5
+
+#define WINDOW_WIDTH 900
+#define WINDOW_HEIGHT 600
 
 #define CELL_HEIGHT (BOARD_HEIGHT / BOARD_ROWS)
 #define CELL_WIDTH (BOARD_WIDTH / BOARD_COLS)
@@ -19,7 +25,7 @@
 #define CELL_OUTLINE_COLOR {0, 0, 0, 50}
 
 #define FRAME_RATE 60
-#define BASE_MOVE_RATE 10
+#define BASE_MOVE_RATE 20
 
 using std::deque;
 using std::vector;
@@ -37,7 +43,7 @@ struct cell_location {
     int row;
 };
 
-Color cell_colors[3] = {
+Color cell_colors[3] {
     RAYWHITE,
     {0, 255, 105, 255},
     {255, 60, 95, 255}
@@ -49,20 +55,20 @@ enum state {
     STATE_GAME_OVER
 };
 
-state game_state = STATE_READY;
+state game_state {STATE_READY};
 
-int direction = 0;
-int frame_count = 0;
-int move_count = 0;
+int direction { 0 };
+int frame_count { 0 };
+int move_count { 0 };
 
-cell_content board[BOARD_COLS][BOARD_ROWS] = {CELL_EMPTY};
+cell_content board[BOARD_COLS][BOARD_ROWS] { CELL_EMPTY };
 
 deque<cell_location> snake;
 
 void reset_board()
 {
-    for (int col = 0; col < BOARD_COLS; col++)  {
-    for (int row = 0; row < BOARD_ROWS; row++) {
+    for (int col { 0 }; col < BOARD_COLS; col++)  {
+    for (int row { 0 }; row < BOARD_ROWS; row++) {
         board[col][row] = CELL_EMPTY;
     }
     }
@@ -70,9 +76,9 @@ void reset_board()
 
 void draw_board()
 {
-    for (int col = 0; col < BOARD_COLS; col++)  {
-    for (int row = 0; row < BOARD_ROWS; row++) {
-        cell_content current_cell = board[col][row]; 
+    for (int col { 0 }; col < BOARD_COLS; col++)  {
+    for (int row { 0 }; row < BOARD_ROWS; row++) {
+        cell_content current_cell{board[col][row]};
         DrawRectangle(
             col * CELL_WIDTH,
             row * CELL_HEIGHT,
@@ -91,35 +97,47 @@ void draw_board()
     } 
 }
 
-void draw_hud()
+void draw_right_hud()
 {
-    string snake_size = "Snake Size: " + to_string(snake.size());
-    DrawText(snake_size.c_str(), 15, 10, 20, BLACK);
-    string moves = "Moves: " + to_string(move_count);
-    DrawText(moves.c_str(), 15, 35, 20, BLACK);
+    GuiLabel(
+        (Rectangle){BOARD_WIDTH + 15, 10, 130, 20},
+        "Snake Size: "
+    );
+    GuiLabel(
+        (Rectangle){BOARD_WIDTH + 130, 10, 130, 20},
+        to_string(snake.size()).c_str()
+    );
+    GuiLabel(
+        (Rectangle){BOARD_WIDTH + 15, 40, 130, 20},
+        "Moves: "
+    );
+    GuiLabel(
+        (Rectangle){BOARD_WIDTH + 90, 40, 130, 20},
+        to_string(move_count).c_str()
+    );
 }
 
 void spawn_apple()
 {
     vector<cell_location> empty_cells;
-    for (int col = 0; col < BOARD_COLS; col++)  {
-    for (int row = 0; row < BOARD_ROWS; row++) {
-        cell_content current_cell = board[col][row];
+    for (int col { 0 }; col < BOARD_COLS; ++col)  {
+    for (int row { 0 }; row < BOARD_ROWS; ++row) {
+        cell_content current_cell { board[col][row] };
         if (current_cell == CELL_EMPTY) {
             cell_location coords = {col, row};
             empty_cells.push_back(coords);
         }
     }
     }
-    size_t random_index = GetRandomValue(0, empty_cells.size() - 1);
-    cell_location spawn = empty_cells.at(random_index);
+    int random_index { GetRandomValue(0, empty_cells.size() - 1) };
+    cell_location spawn { empty_cells.at(random_index) };
     board[spawn.col][spawn.row] = CELL_FOOD;
 }
 
 void reset_snake()
 {
     snake.clear();
-    cell_location head = {
+    cell_location head {
         BOARD_ROWS / 2,
         BOARD_COLS / 2
     };
@@ -132,8 +150,8 @@ void reset_snake()
 
 void update_snake()
 {
-    cell_location old_head = snake.front();
-    cell_location new_head = old_head;
+    cell_location old_head { snake.front() };
+    cell_location new_head { old_head };
 
     switch (direction) {
         case KEY_A:
@@ -150,13 +168,14 @@ void update_snake()
             break;
     };
 
-    bool snake_hit_wall = (new_head.col < 0) or
-                          (new_head.row < 0) or
-                          (new_head.col > BOARD_COLS - 1) or
-                          (new_head.row > BOARD_ROWS - 1);
-
-    bool snake_hit_itself = board[new_head.col][new_head.row] == CELL_SNAKE;
-    bool snake_ate_apple = board[new_head.col][new_head.row] == CELL_FOOD;
+    bool snake_hit_wall{
+        (new_head.col < 0) or
+        (new_head.row < 0) or
+        (new_head.col > BOARD_COLS - 1) or
+        (new_head.row > BOARD_ROWS - 1)
+    };
+    bool snake_hit_itself { board[new_head.col][new_head.row] == CELL_SNAKE };
+    bool snake_ate_apple { board[new_head.col][new_head.row] == CELL_FOOD };
 
     if (snake_hit_wall or snake_hit_itself) {
         game_state = STATE_GAME_OVER;
@@ -166,16 +185,15 @@ void update_snake()
     snake.push_front(new_head);  
     board[new_head.col][new_head.row] = CELL_SNAKE;
 
-    cell_location old_tail = snake.back();
-    board[old_tail.col][old_tail.row] = CELL_EMPTY;
-
     if (snake_ate_apple) {
         spawn_apple();
     } else {
+        cell_location old_tail { snake.back() };
+        board[old_tail.col][old_tail.row] = CELL_EMPTY;
         snake.pop_back();
     }
 
-    move_count++;
+    ++move_count;
 }
 
 void reset_game()
@@ -188,7 +206,7 @@ void reset_game()
 
 void update_direction()
 {
-    int key_pressed = GetKeyPressed();
+    int key_pressed { GetKeyPressed() };
 
     switch(key_pressed) {
         case 0:
@@ -233,25 +251,29 @@ void update()
 
 int main()
 {
-    InitWindow(BOARD_WIDTH, BOARD_HEIGHT, WINDOW_NAME);
-    SetWindowSize(BOARD_WIDTH, BOARD_HEIGHT);
+    // Raylib setup.
+    InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_NAME);
+    SetWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
     SetTargetFPS(FRAME_RATE);
     SetExitKey(KEY_ESCAPE);
     SetTraceLogLevel(LOG_DEBUG);
+    
+    // Raygui setup.
+    GuiSetStyle(DEFAULT, TEXT_SIZE, 20);
 
     reset_game();
 
     while (!WindowShouldClose())
     {
-        frame_count++;
+        ++frame_count;
 
         update();
 
         BeginDrawing();
 
-        ClearBackground(RAYWHITE);
+        ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
         draw_board();
-        draw_hud();
+        draw_right_hud();
 
         EndDrawing();
     } 

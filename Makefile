@@ -1,5 +1,9 @@
-all:
-	clang++ snake.cpp -o snake -lraylib -lm -ldl -lpthread -lGL -lX11
+all: build
+	clang++ src/snake.cpp -o build/snake -lraylib -lm -ldl -lpthread -lGL -lX11
 
 clean:
-	rm snake
+	rm build/snake
+	rmdir build
+
+build:
+	mkdir -p build
