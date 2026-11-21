@@ -1,5 +1,8 @@
+CC := clang++ --std=c++17 
+LINK_FLAGS := -lraylib -lm -ldl -lpthread -lGL -lX11
+
 all: build
-	clang++ src/snake.cpp -o build/snake -lraylib -lm -ldl -lpthread -lGL -lX11
+	$(CC) src/snake.cpp -o build/snake $(LINK_FLAGS)
 
 clean:
 	rm build/snake
