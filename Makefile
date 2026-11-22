@@ -1,12 +1,33 @@
 CC := clang++ --std=c++17 
-LINK_FLAGS := -lraylib -lm -ldl -lpthread -lGL -lX11
 
-all: build
-	$(CC) src/snake.cpp -o build/snake $(LINK_FLAGS)
+TARGET_EXEC ?= snake
+
+BUILD_DIR ?= ./build
+SRC_DIRS ?= ./src
+
+SRCS := $(shell find $(SRC_DIRS) -name *.cpp)
+OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
+DEPS := $(OBJS:.o=.d)
+
+INC_DIRS := $(shell find $(SRC_DIRS) -type d)
+INC_FLAGS := $(addprefix -I,$(INC_DIRS))
+
+CPPFLAGS ?= $(INC_FLAGS) -MMD -MP -Wall -g
+LDFLAGS :=  -lraylib -lm -ldl -lpthread -lGL -lX11
+
+$(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
+	$(CC) $(OBJS) -o $@ $(LDFLAGS)
+
+$(BUILD_DIR)/%.cpp.o: %.cpp
+	$(MKDIR_P) $(dir $@)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+
+
+.PHONY: clean
 
 clean:
-	rm build/snake
-	rmdir build
+	$(RM) -r $(BUILD_DIR)
 
-build:
-	mkdir -p build
+-include $(DEPS)
+
+MKDIR_P ?= mkdir -p

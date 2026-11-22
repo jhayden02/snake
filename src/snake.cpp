@@ -1,61 +1,4 @@
-#include "../raylib.h"
-
-#define RAYGUI_IMPLEMENTATION
-#include "../raygui.h"
-
-#include <deque>
-#include <vector>
-#include <string>
-
-#define WINDOW_NAME "Snake"
-
-#define BOARD_WIDTH 600
-#define BOARD_HEIGHT 600
-
-#define BOARD_ROWS 5
-#define BOARD_COLS 5
-
-#define WINDOW_WIDTH 900
-#define WINDOW_HEIGHT 600
-
-#define CELL_HEIGHT (BOARD_HEIGHT / BOARD_ROWS)
-#define CELL_WIDTH (BOARD_WIDTH / BOARD_COLS)
-
-#define CELL_OUTLINE_PIXELS 1
-#define CELL_OUTLINE_COLOR {0, 0, 0, 50}
-
-#define EMPTY_CELL_COLOR { 80, 80, 80, 255 }
-#define SNAKE_BACKGROUND_COLOR { 40, 40, 40, 255 }
-#define APPLE_COLOR {255, 60, 95, 255}
-
-#define FRAME_RATE 60
-#define BASE_MOVE_RATE 20
-
-using std::deque;
-using std::vector;
-using std::string;
-using std::to_string;
-
-struct cell_location {
-    int col;
-    int row;
-};
-
-enum state {
-    STATE_READY,
-    STATE_PLAYING,
-    STATE_GAME_OVER
-};
-
-state game_state { STATE_READY };
-
-int curr_direction{};
-int next_direction{};
-int frame_count{};
-int move_count{};
-
-deque<cell_location> snake;
-cell_location apple;
+#include "snake.h"
 
 bool locations_intersect(cell_location a, cell_location b)
 {
@@ -89,8 +32,8 @@ bool location_outside_board(cell_location loc)
     bool is_outside {
         (loc.col < 0) or
         (loc.row < 0) or
-        (loc.col > BOARD_COLS - 1) or
-        (loc.row > BOARD_ROWS - 1)
+        (loc.col > BOARD_SIZE - 1) or
+        (loc.row > BOARD_SIZE - 1)
     };
     return is_outside;
 };
@@ -158,8 +101,8 @@ void draw_board()
         EMPTY_CELL_COLOR 
     );
     // Outlines.
-    for (int col{}; col < BOARD_COLS; col++)  {
-    for (int row{}; row < BOARD_ROWS; row++) { 
+    for (int col{}; col < BOARD_SIZE; col++)  {
+    for (int row{}; row < BOARD_SIZE; row++) { 
         DrawRectangleLines(
             col * CELL_WIDTH,
             row * CELL_HEIGHT,
@@ -196,8 +139,8 @@ void spawn_apple()
     //TraceLog(LOG_DEBUG, (string){ "Apple #" + to_string(snake.size()) }.c_str());
     // Empty cells.
     vector<cell_location> empty_cells;
-    for (int col{}; col < BOARD_COLS; col++) {
-    for (int row{}; row < BOARD_ROWS; row++) {
+    for (int col{}; col < BOARD_SIZE; col++) {
+    for (int row{}; row < BOARD_SIZE; row++) {
         cell_location cell { col, row };
         if (location_intersects_snake(cell)) {
             //TraceLog(LOG_DEBUG, (string){ "Snake: { " + to_string(cell.col) + ", " + to_string(cell.row) + "}" }.c_str());
@@ -254,8 +197,8 @@ void reset_game()
     snake.clear();
 
     cell_location head {
-        BOARD_ROWS / 2,
-        BOARD_COLS / 2
+        BOARD_SIZE / 2,
+        BOARD_SIZE / 2
     };
     snake.push_back(head);
 
@@ -289,25 +232,6 @@ void update_next_direction()
     }
 }
 
-void update()
-{
-    update_next_direction();
-    switch (game_state) {
-        case STATE_READY:
-            if (curr_direction != 0) {
-                game_state = STATE_PLAYING;
-            }
-            break;
-        case STATE_PLAYING:
-            if (frame_count % BASE_MOVE_RATE == 0) {
-                update_snake(); 
-            }
-            break;
-        case STATE_GAME_OVER:
-            break;
-    }; 
-}
-
 int main()
 {
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_NAME);
@@ -328,16 +252,29 @@ int main()
             reset_game();
         }
 
-        update();
+        update_next_direction();
+
+        switch (game_state) {
+            case STATE_READY:
+                if (curr_direction != 0) {
+                    game_state = STATE_PLAYING;
+                }
+                break;
+            case STATE_PLAYING:
+                if (frame_count % BASE_MOVE_RATE == 0) {
+                    update_snake(); 
+                }
+                break;
+            case STATE_GAME_OVER:
+                break;
+        };
 
         BeginDrawing();
-
-        ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
-        draw_board();
-        draw_snake();
-        draw_apple();
-        draw_right_hud();
-
+            ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
+            draw_board();
+            draw_snake();
+            draw_apple();
+            draw_right_hud();
         EndDrawing();
     } 
 }
