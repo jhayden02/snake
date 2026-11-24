@@ -37,7 +37,7 @@ using std::vector;
 using std::string;
 using std::to_string;
 
-struct cell_location {
+struct cell {
     int col;
     int row;
 };
@@ -49,20 +49,25 @@ enum state {
 };
 
 struct game {
-    int curr_direction{0};
-    int next_direction{0};
-    int frame_count{0};
-    int move_count{0};
-    int move_rate{BASE_MOVE_RATE};
-    bool game_over{false};
-    deque<cell_location> snake{ {BOARD_SIZE / 2, BOARD_SIZE / 2}  };
-    cell_location apple{};
+    int curr_direction { 0 };
+    int next_direction { 0 };
+
+    int frame_count { 0 };
+
+    int move_count { 0 };
+    int move_rate { BASE_MOVE_RATE };
+
+    bool game_over { false };
+
+    deque<cell> snake { {BOARD_SIZE / 2, BOARD_SIZE / 2}  };
+
+    cell apple;
 };
 
-bool locations_intersect(cell_location a, cell_location b);
-bool location_intersects_snake(cell_location loc, deque<cell_location> *snake);
-bool snake_head_intersects_body(deque<cell_location> *snake);
-bool location_outside_board(cell_location loc);
+bool cells_intersect(cell a, cell b);
+bool cell_intersects_snake(cell c, deque<cell> *snake);
+bool snake_head_intersects_body(deque<cell> *snake);
+bool cell_outside_board(cell c);
 
 void draw_apple(game *g);
 void draw_snake(game *g);

@@ -1,25 +1,25 @@
 #include "snake.h"
 
-bool locations_intersect(cell_location a, cell_location b)
+bool cells_intersect(cell a, cell b)
 {
     return (a.col == b.col and a.row == b.row);
 }
 
-bool location_intersects_snake(cell_location loc, deque<cell_location> *snake)
+bool cell_intersects_snake(cell c, deque<cell> *snake)
 {
     for (int i{}; i < snake->size(); ++i) {
-        if (locations_intersect(loc, snake->at(i))) {
+        if (cells_intersect(c, snake->at(i))) {
             return true;
         }
     }
     return false;
 }
 
-bool snake_head_intersects_body(deque<cell_location> *snake)
+bool snake_head_intersects_body(deque<cell> *snake)
 {
     if (snake->size() > 4) {
         for (int i{4}; i < snake->size(); ++i) {
-            if(locations_intersect(snake->front(), snake->at(i))) {
+            if(cells_intersect(snake->front(), snake->at(i))) {
                 return true;
             }
         }
@@ -27,13 +27,13 @@ bool snake_head_intersects_body(deque<cell_location> *snake)
     return false;
 }
 
-bool location_outside_board(cell_location loc)
+bool cell_outside_board(cell c)
 {
     bool is_outside {
-        (loc.col < 0) or
-        (loc.row < 0) or
-        (loc.col > BOARD_SIZE - 1) or
-        (loc.row > BOARD_SIZE - 1)
+        (c.col < 0) or
+        (c.row < 0) or
+        (c.col > BOARD_SIZE - 1) or
+        (c.row > BOARD_SIZE - 1)
     };
     return is_outside;
 };
@@ -49,10 +49,10 @@ void draw_apple(game *g)
     );
 }
 
-void draw_snake(deque<cell_location> *snake)
+void draw_snake(deque<cell> *snake)
 {
     for (int i{}; i < snake->size(); ++i) {
-        cell_location curr { snake->at(i) };
+        cell curr { snake->at(i) };
         // Draw the center section.
         DrawRectangle(
             (curr.col * CELL_WIDTH) + (CELL_WIDTH / 4),
@@ -64,7 +64,7 @@ void draw_snake(deque<cell_location> *snake)
         
         // Connect this section with the next one toward the tail it exists.
         if (i < snake->size() - 1) {
-            cell_location next { snake->at(i + 1) };
+            cell next { snake->at(i + 1) };
             int x_shift { (next.col - curr.col) * (CELL_WIDTH / 4) };
             int y_shift { (next.row - curr.row) * (CELL_HEIGHT / 4) };
             DrawRectangle(
@@ -77,7 +77,7 @@ void draw_snake(deque<cell_location> *snake)
         }
         // Connect this section with next one toward the head if it exists.
         if (i > 0) {
-            cell_location last { snake->at(i - 1) };
+            cell last { snake->at(i - 1) };
             int x_shift { (last.col - curr.col) * (CELL_WIDTH / 4) };
             int y_shift { (last.row - curr.row) * (CELL_HEIGHT / 4) };
             DrawRectangle(
@@ -138,14 +138,14 @@ void spawn_apple(game *g)
 {
     //TraceLog(LOG_DEBUG, (string){ "Apple #" + to_string(snake->size()) }.c_str());
     // Empty cells.
-    vector<cell_location> empty_cells;
+    vector<cell> empty_cells;
     for (int col{}; col < BOARD_SIZE; col++) {
     for (int row{}; row < BOARD_SIZE; row++) {
-        cell_location cell { col, row };
-        if (location_intersects_snake(cell, &g->snake)) {
+        cell c { col, row };
+        if (cell_intersects_snake(c, &g->snake)) {
             //TraceLog(LOG_DEBUG, (string){ "Snake: { " + to_string(cell.col) + ", " + to_string(cell.row) + "}" }.c_str());
         } else {
-            empty_cells.push_back(cell); 
+            empty_cells.push_back(c); 
         }
     }
     }
@@ -161,9 +161,9 @@ void update_snake(game *g)
         return;
     }
 
-    cell_location old_tail { g->snake.back() };
-    cell_location old_head { g->snake.front() };
-    cell_location new_head { old_head };
+    cell old_tail { g->snake.back() };
+    cell old_head { g->snake.front() };
+    cell new_head { old_head };
 
     switch (g->next_direction) {
         case KEY_A:
@@ -184,12 +184,12 @@ void update_snake(game *g)
     g->snake.push_front(new_head);
     g->snake.pop_back();
 
-    if (location_outside_board(new_head) or snake_head_intersects_body(&g->snake)) {
+    if (cell_outside_board(new_head) or snake_head_intersects_body(&g->snake)) {
         g->game_over = true;
         return;
     }
 
-    if (locations_intersect(g->snake.front(), g->apple)) {
+    if (cells_intersect(g->snake.front(), g->apple)) {
         g->snake.push_back(old_tail);
         spawn_apple(g);
     }
@@ -240,9 +240,8 @@ int main()
             spawn_apple(g);
         }
 
-        update_next_direction(g);
-
         if (not g->game_over) {
+            update_next_direction(g);
             update_snake(g); 
         }
         
