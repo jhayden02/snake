@@ -48,26 +48,29 @@ enum state {
     STATE_GAME_OVER
 };
 
-state game_state { STATE_READY };
-
-int curr_direction{};
-int next_direction{};
-int frame_count{};
-int move_count{};
-
-deque<cell_location> snake;
-cell_location apple;
+struct game {
+    int curr_direction{0};
+    int next_direction{0};
+    int frame_count{0};
+    int move_count{0};
+    int move_rate{BASE_MOVE_RATE};
+    bool game_over{false};
+    deque<cell_location> snake{ {BOARD_SIZE / 2, BOARD_SIZE / 2}  };
+    cell_location apple{};
+};
 
 bool locations_intersect(cell_location a, cell_location b);
-bool location_intersects_snake(cell_location loc);
-bool snake_head_intersects_body();
+bool location_intersects_snake(cell_location loc, deque<cell_location> *snake);
+bool snake_head_intersects_body(deque<cell_location> *snake);
 bool location_outside_board(cell_location loc);
 
-void draw_apple();
-void draw_snake();
+void draw_apple(game *g);
+void draw_snake(game *g);
 void draw_board();
+
 void draw_right_hud();
 
-void spawn_apple();
-void update_snake();
-void reset_game();
+void spawn_apple(game *g);
+void update_snake(game *g);
+void update_next_direction(game *g);
+void init_game(game *g);
